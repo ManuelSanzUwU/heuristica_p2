@@ -1,6 +1,7 @@
 import random
 import time
 import lector
+import sys
 from constraint import *
 ti = time.time()
 
@@ -95,8 +96,8 @@ def resolver_problema(path_entrada: str):
                     if i != j != k != i:
                         problem.addConstraint(restr5, (vehiculos[i], vehiculos[j], vehiculos[k]))
 
-    return problem.getSolutions()
+    return (x_max, y_max), problem.getSolutions()
 
 
-for i in range(1, 4):
-    imp_sol(resolver_problema("casos_prueba1/entrada" + str(i) + ".csv"))
+path = sys.argv[1]
+lector.escribir(path[:len(path)-3] + "csv", resolver_problema(path))

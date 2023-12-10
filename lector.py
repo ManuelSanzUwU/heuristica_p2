@@ -1,4 +1,5 @@
 import csv
+import random
 
 
 def leer(archivo: str) -> tuple:
@@ -22,4 +23,21 @@ def leer(archivo: str) -> tuple:
 
         return r
 
-def escribir(archivo: str) -> None:
+
+def escribir(archivo: str, resultados) -> None:
+    with open(archivo, 'w', newline='') as csvfile:
+        escritor = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+        escritor.writerow(["N. Sol:", len(resultados[1])])
+        resultado = resultados[1][random.randint(0, len(resultados[1])-1)]
+        for i in range(1, resultados[0][0] + 1):
+            linea = []
+            for j in range(1, resultados[0][1] + 1):
+                falso = True
+                for res in resultado:
+                    if int(resultado[res][1]) == i and int(resultado[res][3]) == j:
+                        linea.append(res)
+                        falso = False
+                if falso:
+                    linea.append("-")
+            escritor.writerow(linea)
+
