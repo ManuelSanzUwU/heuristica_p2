@@ -2,10 +2,10 @@ import csv
 import random
 
 
-def leer(archivo: str) -> tuple:
+def leer_para_aestrella(archivo: str) -> tuple:
     with open(archivo) as csvfile:
         datos = []
-        todo = csv.reader(csvfile, delimiter=" ")
+        todo = csv.reader(csvfile, delimiter=";")
         for row in todo:
             datos.append(row)
         if len(datos) < 3:
@@ -22,6 +22,15 @@ def leer(archivo: str) -> tuple:
         r = ((x, y), plazas_carga, v)
 
         return r
+
+
+def leer(archivo: str) -> list:
+    with open(archivo) as csvfile:
+        datos = []
+        todo = csv.reader(csvfile, delimiter=";")
+        for row in todo:
+            datos.append(row)
+        return datos
 
 
 def escribir(archivo: str, resultados) -> None:

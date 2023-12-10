@@ -6,6 +6,11 @@ from constraint import *
 ti = time.time()
 
 
+if len(sys.argv) < 2:
+    print("numero de argumentos no valido")
+    sys.exit(1)
+
+
 def imp_sol(z):
     print(len(z))
     print(z[random.randint(0, len(z) - 1)])
