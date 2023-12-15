@@ -75,11 +75,12 @@ class Nodo:
 
     def __lt__(self, other):
         """reescribo la funcion de menor q de python para poder usar las funciones de heapq de python para ordenar
-        la lista abierta"""
+        la lista abierta, la funcion tiene un > en luegar de un < para q python ordene la lista de mayor a menor y asi
+        escoger el nodo con mayor f()"""
         return f(self) < f(other)
 
     def __str__(self):
-        return str(self.valor.mapa) + str(self.valor.transporte) + "e: " + str(self.valor.energia) + ", c:" + str(self.c)
+        return str(self.valor.transporte) + "e: " + str(self.valor.energia) + ", c:" + str(self.c)
 
     def __eq__(self, other):
         """dos nodos se consideraran iguales si sus estados son iguales, lo uso para llamar al nodo y no al estado
@@ -113,7 +114,10 @@ class Nodo:
 
     def impr_sol2(self) -> str:
         a = "(" + str(self.valor.transporte[0]) + "," + str(self.valor.transporte[1]) + ")"
-        b = self.valor.mapa[self.valor.transporte[0]][self.valor.transporte[1]]
+        if self.puntero is not None:
+            b = self.puntero.valor.mapa[self.valor.transporte[0]][self.valor.transporte[1]]
+        else:
+            b = self.valor.mapa[self.valor.transporte[0]][self.valor.transporte[1]]
         c = str(self.valor.energia)
         return a + ":" + b + ":" + c
 
@@ -200,7 +204,7 @@ class Grafo:
 
 def f(nodo: Nodo):
     """funicon de evaluacion"""
-    return heuristica(nodo) + nodo.c
+    return nodo.c - heuristica(nodo)
 
 
 def heuristica(nodo: Nodo) -> int:
@@ -210,21 +214,22 @@ def heuristica(nodo: Nodo) -> int:
         return heuristica_1(nodo)
     elif sys.argv[2] == "2":
         return heuristica_2(nodo)
+    elif sys.argv[2] == "3":
+        return heuristica_3(nodo)
     else:
-        return 50
+        return 0
 
 
 def heuristica_1(nodo: Nodo) -> int:
-    estado = nodo.valor
-    n = 0
-    c = 0
-    for i in range(len(estado.mapa)):
-        for j in range(len(estado.mapa[i])):
-            if estado.mapa[i][j] == "N":
-                n += 1
-            elif estado.mapa[i][j] == "C":
-                c += 1
-    return (n + c)*10 + len(estado.transporte[2])
+    return _heuristica_1(I) - _heuristica_1(nodo.valor)
+
+
+def _heuristica_1(estado) -> int:
+    n, c = pasajeros_restantes(estado.mapa)
+    d = (len(n) + len(c))*2
+    if len(estado.transporte[2]):
+        d += 2
+    return d
 
 
 def calc_distancia(a, b) -> int:
@@ -233,45 +238,69 @@ def calc_distancia(a, b) -> int:
 
 
 def heuristica_2(nodo: Nodo) -> int:
-    """
-    distancia = 0
-    estado = nodo.valor
-    for i in range(len(estado.mapa)):
-        for j in range(len(estado.mapa[i])):
-            if estado.mapa[i][j] == "N":
-                distancia += calc_distancia(estado.transporte, (i, j))
-            elif estado.mapa[i][j] == "C":
-                distancia += calc_distancia(estado.transporte, (i, j))
-    return distancia
-    """
-    # relajando solo la condicion de volver al p al final
+    return _heuristica_2(I) - _heuristica_2(nodo.valor)
+
+
+def _heuristica_2(estado) -> int:
     d = 0
-    estado = nodo.valor
-    # d al punto mas cercano, d del punto mas cercano a cc al respectivo centro
-    c = []
-    n = []
+    c, n = pasajeros_restantes(estado.mapa)
     for i in range(len(estado.mapa)):
         for j in range(len(estado.mapa[i])):
-            if estado.mapa[i][j] == "N":
-                n.append((i, j))
-            elif estado.mapa[i][j] == "C":
-                c.append((i, j))
-            elif estado.mapa[i][j] == "CN":
+            if estado.mapa[i][j] == "CN":
                 cn = (i, j)
             elif estado.mapa[i][j] == "CC":
                 cc = (i, j)
-    if len(estado.transporte[2]) < 10 and "C" not in estado.transporte[2] and len(n):
-        d += punto_cercano(estado.transporte, n)
-    elif len(estado.transporte[2]) <= 8 and estado.transporte[2].count("C") < 2 and len(c):
-        d += punto_cercano(estado.transporte, c)
-    elif estado.transporte[2].count("C") == 2:
-        d += calc_distancia(estado.transporte, cc)
-    elif estado.transporte[2].count("N") == 10:
-        d += calc_distancia(estado.transporte, cn)
-    elif len(n) == 0 and len(c) == 0:
-        d += calc_distancia(estado.transporte, localizar_parking(estado.mapa))
 
-    d += (len(n) + len(c))*2
+    """distania del transporte al punto a recoger mas cercano o al sitio de descarga si toca"""
+    if len(c):
+        d += punto_cercano(cc, c)
+    d += len(c) - 1
+
+    if len(n):
+        d += punto_cercano(cn, n)
+    d += len(n) - 1
+
+    """distancia del transporte o del sitio de descarga al final"""
+    if len(n) == 0 and len(c) == 0:
+        if len(estado.transporte[2]):
+            d += punto_cercano(estado.transporte, [cc, cn]) + punto_cercano(localizar_parking(estado.mapa), [cc, cn])
+        else:
+            d += calc_distancia(estado.transporte, localizar_parking(estado.mapa))
+    else:
+        d += punto_cercano(localizar_parking(estado.mapa), [cc, cn])
+
+    return d
+
+
+def heuristica_3(nodo: Nodo) -> int:
+    return _heuristica_3(I) - _heuristica_3(nodo.valor)
+
+
+def _heuristica_3(estado) -> int:
+    d = 0
+    c, n = pasajeros_restantes(estado.mapa)
+    for i in range(len(estado.mapa)):
+        for j in range(len(estado.mapa[i])):
+            if estado.mapa[i][j] == "CN":
+                cn = (i, j)
+            elif estado.mapa[i][j] == "CC":
+                cc = (i, j)
+
+    """distania del transporte al punto a recoger mas cercano o al sitio de descarga si toca"""
+    if len(c):
+        d += punto_lejano(cc, c)*len(c)
+
+    if len(n):
+        d += punto_lejano(cn, n)*len(n)
+
+    """distancia del transporte o del sitio de descarga al final"""
+    if len(n) == 0 and len(c) == 0:
+        if len(estado.transporte[2]):
+            d += punto_lejano(estado.transporte, [cc, cn]) + punto_lejano(localizar_parking(estado.mapa), [cc, cn])
+        else:
+            d += calc_distancia(estado.transporte, localizar_parking(estado.mapa))
+    else:
+        d += punto_lejano(estado.transporte, [cc, cn]) + punto_lejano(localizar_parking(estado.mapa), [cc, cn])
 
     return d
 
@@ -287,7 +316,19 @@ def punto_cercano(punto, lista) -> int:
     return min
 
 
+def punto_lejano(punto, lista) -> int:
+    """lo mismo q punto_cercano, pero pasa la distancia mas larga no la mas corta"""
+    max = calc_distancia(lista[0], punto)
+    for p in lista:
+        z = calc_distancia(p, punto)
+        if z > max:
+            max = z
+    return max
+
+
 def pasajeros_restantes(mapa) -> tuple:
+    """recorre el mapa y devuelve una tupla con dos listas de tuplas que contienen las coordenadas de cada uno de los
+    pacientes a recoger que tiene el mapa pasado por parametro"""
     c = []
     n = []
     for i in range(len(mapa)):
@@ -336,14 +377,14 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
     abierta = [I]
     heapq.heapify(abierta)
     cerrada = []
-    falso = False
+    exito = False
     iteracion = 0
     sol = None
-    while len(abierta) and not falso:
+    while len(abierta) and not exito:
         n = heapq.heappop(abierta)
         appends = []
         if estado_final.__eq__(n.valor):
-            falso = True
+            exito = True
             sol = n
         else:
             S = n.expandir()
@@ -362,18 +403,15 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
                                 heapq.heappush(abierta, s)
                                 break
 
-            lista = []
             for append in appends:
                 heapq.heappush(abierta, append)
 
         iteracion += 1
 
-    print(falso)
-    if falso:
-        print(iteracion)
+    if exito:
         mapa = sys.argv[1][:len(sys.argv[1])-4]
         lector.escribir_para_aestrella(mapa + "-" + str(sys.argv[2] + ".output"), sol.impr_sol())
-        lector.escribir_para_aestrella2(mapa + "-" + str(sys.argv[2] + ".stat"), [tiempo(), sol.coste_e(), sol.c, G.long()])
+        lector.escribir_para_aestrella2(mapa + "-" + str(sys.argv[2] + ".stat"), [tiempo(), sol.coste_e(), sol.c, iteracion])
 
 
 inicial = lector.leer_para_astrella(sys.argv[1])
