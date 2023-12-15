@@ -24,6 +24,20 @@ def leer_para_aestrella(archivo: str) -> tuple:
         return r
 
 
+def escribir_para_aestrella(archivo: str, resultados) -> None:
+    with open(archivo, 'w', newline='') as archivo:
+        for res in resultados:
+            archivo.write(res + "\n")
+
+
+def escribir_para_aestrella2(archivo: str, resultados) -> None:
+    with open(archivo, 'w', newline='') as archivo:
+        print(resultados)
+        l = ["Tiempo total: ", "Coste total: ", "Longitud del plan:", "Nodos expandidos"]
+        for i in range(4):
+            archivo.write(l[i] + str(resultados[i]) + "\n")
+
+
 def leer(archivo: str) -> list:
     with open(archivo) as csvfile:
         datos = []

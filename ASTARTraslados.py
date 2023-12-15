@@ -1,13 +1,14 @@
 import lector
 import sys
 import time
+import heapq
 
 ti = time.time()
 
 
 def tiempo():
     tf = time.time()
-    print(tf - ti)
+    return tf - ti
 
 
 if len(sys.argv) < 3:
@@ -54,17 +55,41 @@ class Nodo:
         self.puntero = apuntando
         self.c = c
 
+    def __lt__(self, other):
+        return f(self) < f(other)
+
     def __str__(self):
         return str(self.valor.mapa) + str(self.valor.transporte) + "e: " + str(self.valor.energia) + ", c:" + str(self.c)
 
     def __eq__(self, other):
         return self.valor.__eq__(other.valor)
 
-    def impr_sol(self):
+    def coste_e(self):
         if self.puntero is None:
-            return self.__str__()
+            return self.coste_e2()
         else:
-            return self.puntero.impr_sol() + "\n" + self.__str__()
+            return self.puntero.coste_e() + self.coste_e2()
+
+    def coste_e2(self):
+        z = self.valor.mapa[self.valor.transporte[0]][self.valor.transporte[1]]
+        if z == "P":
+            return 0
+        elif z.isdigit():
+            return int(z)
+        else:
+            return 1
+
+    def impr_sol(self) -> list:
+        if self.puntero is None:
+            return [self.impr_sol2()]
+        else:
+            return self.puntero.impr_sol() + [self.impr_sol2()]
+
+    def impr_sol2(self) -> str:
+        a = "(" + str(self.valor.transporte[0]) + "," + str(self.valor.transporte[1]) + ")"
+        b = self.valor.mapa[self.valor.transporte[0]][self.valor.transporte[1]]
+        c = str(self.valor.energia)
+        return a + ":" + b + ":" + c
 
     def expandir(self) -> list:
         z = [Nodo(self.mover_a((self.valor.transporte[0]+1, self.valor.transporte[1],
@@ -138,12 +163,24 @@ class Grafo:
     def añadir(self, nodo):
         self.nodos.append(nodo)
 
+    def long(self):
+        return len(self.nodos)
+
 
 def f(nodo: Nodo):
-    return heuristica_1(nodo) + nodo.c
+    return heuristica(nodo) + nodo.c
 
 
-def heuristica_sin_informar(nodo: Nodo):
+def heuristica(nodo: Nodo):
+    if sys.argv[2] == "1":
+        return heuristica_1(nodo)
+    elif sys.argv[2] == "2":
+        return heuristica_2(nodo)
+    else:
+        return heuristica_sin_informar()
+
+
+def heuristica_sin_informar():
     return 50
 
 
@@ -207,15 +244,14 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
     I = Nodo(estado_inicial, None, 0)
     G = Grafo([I])
     abierta = [I]
+    heapq.heapify(abierta)
     cerrada = []
     falso = False
     iteracion = 0
     sol = None
     while len(abierta) and not falso:
-        n = abierta[0]
+        n = heapq.heappop(abierta)
         appends = []
-        #print("se expande el ndo:", n)
-        abierta.__delitem__(0)
         if estado_final.__eq__(n.valor):
             falso = True
             sol = n
@@ -230,32 +266,24 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
                     for i in range(len(abierta)):
                         if abierta[i].__eq__(s):
                             if f(s) < f(abierta[i]):
-                                abierta[i] = s
+                                G.añadir(s.apuntar(n))
+                                abierta.remove(abierta[i])
+                                heapq.heapify(abierta)
+                                heapq.heappush(abierta, s)
                                 break
 
             lista = []
-            abierta += appends
-            for i in range(len(abierta)):
-                min = f(abierta[0])
-                z = 0
-                for j in range(len(abierta)):
-                    if f(abierta[j]) < min:
-                        z = j
-                lista.append(abierta[z])
-                abierta.__delitem__(z)
-            abierta = lista
-
-        #print(iteracion, falso, abierta, cerrada)
-        for nodo in abierta:
-            ...
-            # print(nodo.valor.mapa, nodo.valor.transporte, nodo.valor.energia, "f=", heuristica_sin_informar(nodo))
+            for append in appends:
+                heapq.heappush(abierta, append)
 
         iteracion += 1
 
-        #print()
-
+    print(falso)
     if falso:
-        print(iteracion, "\n", sol.impr_sol())
+        print(iteracion)
+        mapa = sys.argv[1][:len(sys.argv[1])-4]
+        lector.escribir_para_aestrella(mapa + "-" + str(sys.argv[2] + ".output"), sol.impr_sol())
+        lector.escribir_para_aestrella2(mapa + "-" + str(sys.argv[2] + ".stat"), [tiempo(), sol.coste_e(), sol.c, G.long()])
 
 
 inicial = lector.leer(sys.argv[1])
@@ -265,13 +293,3 @@ I = Estado(inicial, localizar_parking(inicial), 50)
 F = Estado(final, localizar_parking(inicial), 50)
 
 a_estella(I, F)
-
-tiempo()
-
-"""
-a = Nodo(Estado(inicial, (1, 1, ["N", "C", "C"]), 50), None, 0)
-b = Nodo(Estado(inicial, (1, 1, ["C", "N", "C"]), 50), a, 2)
-print(a.__str__() + "\n" + b.__str__())
-print(a.__eq__(b))
-"""
-
