@@ -203,7 +203,7 @@ def f(nodo: Nodo):
     return heuristica(nodo) + nodo.c
 
 
-def heuristica(nodo: Nodo):
+def heuristica(nodo: Nodo) -> int:
     """escoge entre las 2 heuristicas posibles o bien escoge una sin informacion si no reconoce el parametro de
     entrada"""
     if sys.argv[2] == "1":
@@ -214,7 +214,7 @@ def heuristica(nodo: Nodo):
         return 50
 
 
-def heuristica_1(nodo: Nodo):
+def heuristica_1(nodo: Nodo) -> int:
     estado = nodo.valor
     n = 0
     c = 0
@@ -227,12 +227,12 @@ def heuristica_1(nodo: Nodo):
     return (n + c)*10 + len(estado.transporte[2])
 
 
-def calc_distancia(a, b):
+def calc_distancia(a, b) -> int:
     """calcula la distancia de manhattan entre dos puntos a y b"""
     return abs(a[0]-b[0]) + abs(a[1]-b[1])
 
 
-def heuristica_2(nodo: Nodo):
+def heuristica_2(nodo: Nodo) -> int:
     """
     distancia = 0
     estado = nodo.valor
@@ -260,6 +260,43 @@ def heuristica_2(nodo: Nodo):
                 cn = (i, j)
             elif estado.mapa[i][j] == "CC":
                 cc = (i, j)
+    if len(estado.transporte[2]) < 10 and "C" not in estado.transporte[2] and len(n):
+        d += punto_cercano(estado.transporte, n)
+    elif len(estado.transporte[2]) <= 8 and estado.transporte[2].count("C") < 2 and len(c):
+        d += punto_cercano(estado.transporte, c)
+    elif estado.transporte[2].count("C") == 2:
+        d += calc_distancia(estado.transporte, cc)
+    elif estado.transporte[2].count("N") == 10:
+        d += calc_distancia(estado.transporte, cn)
+    elif len(n) == 0 and len(c) == 0:
+        d += calc_distancia(estado.transporte, localizar_parking(estado.mapa))
+
+    d += (len(n) + len(c))*2
+
+    return d
+
+
+def punto_cercano(punto, lista) -> int:
+    """recibe una lista de puntos y un punto, devuelve la distancia del punto mas cercano de la lista al punto
+    pasado por parametros"""
+    min = calc_distancia(lista[0], punto)
+    for p in lista:
+        z = calc_distancia(p, punto)
+        if z < min:
+            min = z
+    return min
+
+
+def pasajeros_restantes(mapa) -> tuple:
+    c = []
+    n = []
+    for i in range(len(mapa)):
+        for j in range(len(mapa[i])):
+            if mapa[i][j] == "N":
+                n.append((i, j))
+            elif mapa[i][j] == "C":
+                c.append((i, j))
+    return c, n
 
 
 def generar_e_final(e_inicial: list) -> list:
@@ -339,7 +376,7 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
         lector.escribir_para_aestrella2(mapa + "-" + str(sys.argv[2] + ".stat"), [tiempo(), sol.coste_e(), sol.c, G.long()])
 
 
-inicial = lector.leer(sys.argv[1])
+inicial = lector.leer_para_astrella(sys.argv[1])
 final = generar_e_final(inicial)
 
 I = Estado(inicial, localizar_parking(inicial), 50)
