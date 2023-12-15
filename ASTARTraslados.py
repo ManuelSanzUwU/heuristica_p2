@@ -1,5 +1,13 @@
 import lector
 import sys
+import time
+
+ti = time.time()
+
+
+def tiempo():
+    tf = time.time()
+    print(tf - ti)
 
 
 if len(sys.argv) < 3:
@@ -100,7 +108,7 @@ class Nodo:
                     mapa[tr[0]][tr[1]] = "1"
                 e -= 1
             elif z == "C":
-                if len(tr[2]) < 10 and tr[2].count("N") <= 8:
+                if tr[2].count("N") <= 8 and tr[2].count("C") < 2:
                     tr[2].append("C")
                     mapa[tr[0]][tr[1]] = "1"
                 e -= 1
@@ -149,8 +157,23 @@ def heuristica_1(nodo: Nodo):
                 n += 1
             elif estado.mapa[i][j] == "C":
                 c += 1
-    return (n + c)*2 + len(estado.transporte[2])
+    return (n + c)*10 + len(estado.transporte[2])
 
+
+def calc_distancia(a, b):
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+
+def heuristica_2(nodo: Nodo):
+    distancia = 0
+    estado = nodo.valor
+    for i in range(len(estado.mapa)):
+        for j in range(len(estado.mapa[i])):
+            if estado.mapa[i][j] == "N":
+                distancia += calc_distancia(estado.transporte, (i, j))
+            elif estado.mapa[i][j] == "C":
+                distancia += calc_distancia(estado.transporte, (i, j))
+    return distancia
 
 
 def generar_e_final(e_inicial: list) -> list:
@@ -191,7 +214,7 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
     while len(abierta) and not falso:
         n = abierta[0]
         appends = []
-        print("se expande el ndo:", n)
+        #print("se expande el ndo:", n)
         abierta.__delitem__(0)
         if estado_final.__eq__(n.valor):
             falso = True
@@ -222,17 +245,17 @@ def a_estella(estado_inicial: Estado, estado_final: Estado):
                 abierta.__delitem__(z)
             abierta = lista
 
-        print(iteracion, falso, abierta, cerrada)
+        #print(iteracion, falso, abierta, cerrada)
         for nodo in abierta:
             ...
             # print(nodo.valor.mapa, nodo.valor.transporte, nodo.valor.energia, "f=", heuristica_sin_informar(nodo))
 
         iteracion += 1
 
-        print()
+        #print()
 
     if falso:
-        print(sol.impr_sol())
+        print(iteracion, "\n", sol.impr_sol())
 
 
 inicial = lector.leer(sys.argv[1])
@@ -242,6 +265,8 @@ I = Estado(inicial, localizar_parking(inicial), 50)
 F = Estado(final, localizar_parking(inicial), 50)
 
 a_estella(I, F)
+
+tiempo()
 
 """
 a = Nodo(Estado(inicial, (1, 1, ["N", "C", "C"]), 50), None, 0)
